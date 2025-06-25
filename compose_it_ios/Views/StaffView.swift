@@ -285,8 +285,8 @@ struct StaffView: View {
             .padding(.horizontal)
             // Multi-measure systems
             ForEach(Array(chunked(score.measures, size: measuresPerSystem).enumerated()), id: \.offset) { (systemIndex, systemMeasures) in
-                let systemView = SystemRowView(systemMeasures: systemMeasures, selectedInstrument: selectedInstrument, clef: selectedInstrument?.clef ?? .treble)
-                systemView.environmentScore(score)
+                SystemRowView(systemMeasures: systemMeasures, selectedInstrument: selectedInstrument, clef: selectedInstrument?.clef ?? .treble)
+                    .environment(\.score, score)
             }
             Spacer()
         }
@@ -411,8 +411,7 @@ struct NoteView: View {
     }
     // Determine if the note needs an accidental
     private func accidentalType() -> AccidentalType? {
-        guard let score = score else { return nil }
-        let key = score.keySignature
+        guard score != nil else { return nil }
         let pitch = note.pitch
         // For demo: show sharp for C#, flat for Bb, natural for C natural in sharp keys
         if pitch.pitch.rawValue.contains("#") { return .sharp }
@@ -469,11 +468,6 @@ extension EnvironmentValues {
     var score: MusicScore? {
         get { self[ScoreKey.self] }
         set { self[ScoreKey.self] = newValue }
-    }
-}
-extension StaffView {
-    func environmentScore(_ score: MusicScore) -> some View {
-        environment(\.score, score)
     }
 }
 

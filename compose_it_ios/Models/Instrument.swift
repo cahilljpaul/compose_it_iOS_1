@@ -7,6 +7,10 @@ struct Instrument: Identifiable, Codable, Hashable {
     let range: NoteRange
     let family: InstrumentFamily
     
+    enum CodingKeys: String, CodingKey {
+        case name, clef, range, family
+    }
+    
     enum Clef: String, CaseIterable, Codable {
         case treble = "Treble"
         case bass = "Bass"

@@ -9,6 +9,10 @@ struct MusicScore: Identifiable, Codable {
     let measures: [Measure]
     let instruments: [Instrument]
     
+    enum CodingKeys: String, CodingKey {
+        case title, keySignature, timeSignature, tempo, measures, instruments
+    }
+    
     struct TimeSignature: Codable, Hashable {
         let beats: Int
         let beatType: Int
@@ -23,11 +27,19 @@ struct MusicScore: Identifiable, Codable {
         let notes: [Note]
         let measureNumber: Int
         
+        enum CodingKeys: String, CodingKey {
+            case notes, measureNumber
+        }
+        
         struct Note: Identifiable, Codable {
             let id = UUID()
             let pitch: Instrument.Note
             let duration: Duration
             let isRest: Bool
+            
+            enum CodingKeys: String, CodingKey {
+                case pitch, duration, isRest
+            }
             
             enum Duration: String, CaseIterable, Codable {
                 case whole = "Whole"

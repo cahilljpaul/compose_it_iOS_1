@@ -55,6 +55,10 @@ struct KeySignature: Identifiable, Codable, Hashable {
         default: return 0
         }
     }
+    
+    enum CodingKeys: String, CodingKey {
+        case tonic, mode
+    }
 }
 
 // Predefined key signatures
