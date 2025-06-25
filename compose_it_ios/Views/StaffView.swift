@@ -267,15 +267,9 @@ struct MeasureView: View {
             .frame(width: 80, height: 50)
             
             // Notes
-            HStack(spacing: 8) {
-                let keyCount = score?.keySignature.sharps ?? 0 + score?.keySignature.flats ?? 0
-                Spacer().frame(width: measure.measureNumber == 1 ? 60 + CGFloat(keyCount) * 12 : 24) // Space for clef + key + time
-                ForEach(measure.notes) { note in
-                    NoteView(note: note, clef: clef)
-                }
-            }
-            .frame(width: 80, height: 50)
-            .padding(.top, 4)
+            notesRow
+                .frame(width: 80, height: 50)
+                .padding(.top, 4)
             
             // Measure number
             VStack {
@@ -298,6 +292,16 @@ struct MeasureView: View {
             BassClefShape()
         case .alto, .tenor:
             AltoClefShape()
+        }
+    }
+    // Refactored notes row
+    private var notesRow: some View {
+        let keyCount = score?.keySignature.sharps ?? 0 + score?.keySignature.flats ?? 0
+        return HStack(spacing: 8) {
+            Spacer().frame(width: measure.measureNumber == 1 ? 60 + CGFloat(keyCount) * 12 : 24)
+            ForEach(measure.notes) { note in
+                NoteView(note: note, clef: clef)
+            }
         }
     }
 }
