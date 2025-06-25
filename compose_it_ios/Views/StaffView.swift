@@ -1,5 +1,10 @@
 import SwiftUI
 
+// Accidental type for music notation
+enum AccidentalType {
+    case sharp, flat, natural
+}
+
 // MARK: - Clef Shapes
 struct TrebleClefShape: Shape {
     func path(in rect: CGRect) -> Path {
