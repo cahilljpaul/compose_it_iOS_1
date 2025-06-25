@@ -297,6 +297,17 @@ struct MeasureView: View {
     }
 }
 
+// Helper to type-erase Shape
+struct AnyShape: Shape {
+    private let pathFunc: (CGRect) -> Path
+    init<S: Shape>(_ shape: S) {
+        self.pathFunc = { rect in shape.path(in: rect) }
+    }
+    func path(in rect: CGRect) -> Path {
+        pathFunc(rect)
+    }
+}
+
 struct NoteView: View {
     let note: MusicScore.Measure.Note
     let clef: Instrument.Clef
@@ -310,37 +321,51 @@ struct NoteView: View {
                     .foregroundColor(.secondary)
             } else {
                 HStack(spacing: 2) {
-                    if let accidental = accidentalType() {
-                        accidentalShape(for: accidental)
-                            .stroke(Color.primary, lineWidth: 2)
-                            .frame(width: 10, height: 18)
-                    }
-                    ZStack(alignment: stemDirection == .up ? .bottomLeading : .topTrailing) {
-                        NoteHeadShape()
-                            .fill(Color.primary)
-                            .frame(width: 14, height: 10)
-                            .offset(y: noteYOffset())
-                        // Stem
-                        Rectangle()
-                            .frame(width: 2, height: 20)
-                            .foregroundColor(.primary)
-                            .offset(x: stemDirection == .up ? 10 : 0, y: stemDirection == .up ? -10 : 10)
-                            .rotationEffect(stemDirection == .up ? .degrees(0) : .degrees(180), anchor: .bottom)
-                        // Flag for eighth or shorter
-                        if let flagCount = flagCount(for: note.duration), flagCount > 0 {
-                            ForEach(0..<flagCount, id: \.self) { i in
-                                NoteFlagShape(up: stemDirection == .up)
-                                    .stroke(Color.primary, lineWidth: 2)
-                                    .frame(width: 10, height: 10)
-                                    .offset(x: stemDirection == .up ? 12 : -2, y: stemDirection == .up ? -16 - CGFloat(i * 6) : 16 + CGFloat(i * 6))
-                            }
-                        }
-                    }
+                    accidentalView
+                    noteHeadWithStemAndFlags
                 }
             }
             Text(note.duration.rawValue)
                 .font(.caption2)
                 .foregroundColor(.secondary)
+        }
+    }
+    // MARK: - Accidental Rendering
+    @ViewBuilder
+    private var accidentalView: some View {
+        if let accidental = accidentalType() {
+            accidentalShape(for: accidental)
+                .stroke(Color.primary, lineWidth: 2)
+                .frame(width: 10, height: 18)
+        }
+    }
+    private func accidentalShape(for type: AccidentalType) -> AnyShape {
+        switch type {
+        case .sharp: return AnyShape(SharpShape())
+        case .flat: return AnyShape(FlatShape())
+        case .natural: return AnyShape(NaturalShape())
+        }
+    }
+    // MARK: - Note Head, Stem, Flags
+    private var noteHeadWithStemAndFlags: some View {
+        ZStack(alignment: stemDirection == .up ? .bottomLeading : .topTrailing) {
+            NoteHeadShape()
+                .fill(Color.primary)
+                .frame(width: 14, height: 10)
+                .offset(y: noteYOffset())
+            Rectangle()
+                .frame(width: 2, height: 20)
+                .foregroundColor(.primary)
+                .offset(x: stemDirection == .up ? 10 : 0, y: stemDirection == .up ? -10 : 10)
+                .rotationEffect(stemDirection == .up ? .degrees(0) : .degrees(180), anchor: .bottom)
+            if let flagCount = flagCount(for: note.duration), flagCount > 0 {
+                ForEach(0..<flagCount, id: \.self) { i in
+                    NoteFlagShape(up: stemDirection == .up)
+                        .stroke(Color.primary, lineWidth: 2)
+                        .frame(width: 10, height: 10)
+                        .offset(x: stemDirection == .up ? 12 : -2, y: stemDirection == .up ? -16 - CGFloat(i * 6) : 16 + CGFloat(i * 6))
+                }
+            }
         }
     }
     // Calculate vertical offset for note head based on pitch and clef
@@ -374,14 +399,6 @@ struct NoteView: View {
         // In a real app, check if the note is not in the key signature
         return nil
     }
-    private func accidentalShape(for type: AccidentalType) -> some Shape {
-        switch type {
-        case .sharp: return SharpShape()
-        case .flat: return FlatShape()
-        case .natural: return NaturalShape()
-        }
-    }
-    enum AccidentalType { case sharp, flat, natural }
     // Stem direction: up if below middle line, down if above
     private var stemDirection: StemDirection {
         let y = noteYOffset()
