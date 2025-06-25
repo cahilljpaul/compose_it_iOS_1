@@ -206,114 +206,18 @@ struct StaffView: View {
     }
 }
 
-struct MeasureView: View {
+struct NotesRowView: View {
     let measure: MusicScore.Measure
-    let instrument: Instrument?
     let clef: Instrument.Clef
+    let keyCount: Int
     @Environment(\.score) var score: MusicScore?
-    
     var body: some View {
-        ZStack(alignment: .leading) {
-            // Staff lines
-            VStack(spacing: 0) {
-                ForEach(0..<5) { _ in
-                    Rectangle()
-                        .frame(width: 80, height: 1)
-                        .foregroundColor(.primary)
-                }
-            }
-            
-            // Clef
-            VStack {
-                clefShape()
-                    .stroke(Color.primary, lineWidth: 2)
-                    .frame(width: 20, height: 50)
-                    .offset(x: 0, y: 0)
-                Spacer()
-            }
-            .frame(width: 80, height: 50)
-            
-            // Key signature (only in first measure)
-            if let score = score, measure.measureNumber == 1 {
-                VStack {
-                    KeySignatureView(keySignature: score.keySignature, clef: clef)
-                        .frame(height: 50)
-                        .offset(x: 20, y: 0)
-                    Spacer()
-                }
-                .frame(width: 80, height: 50)
-                // Time signature after key signature
-                VStack {
-                    TimeSignatureView(timeSignature: score.timeSignature)
-                        .frame(height: 50)
-                        .offset(x: 38 + CGFloat(max(score.keySignature.sharps, score.keySignature.flats)) * 12, y: 0)
-                    Spacer()
-                }
-                .frame(width: 80, height: 50)
-            }
-            
-            // Bar lines
-            VStack {
-                Rectangle()
-                    .frame(width: 2, height: 50)
-                    .foregroundColor(.primary)
-                    .offset(x: 0, y: 0)
-                Spacer()
-                Rectangle()
-                    .frame(width: 2, height: 50)
-                    .foregroundColor(.primary)
-                    .offset(x: 78, y: 0)
-            }
-            .frame(width: 80, height: 50)
-            
-            // Notes
-            notesRow
-                .frame(width: 80, height: 50)
-                .padding(.top, 4)
-            
-            // Measure number
-            VStack {
-                Text("\(measure.measureNumber)")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .offset(x: 60, y: -10)
-                Spacer()
-            }
-        }
-        .frame(width: 100, height: 60)
-    }
-    
-    @ViewBuilder
-    private func clefShape() -> some View {
-        switch clef {
-        case .treble:
-            TrebleClefShape()
-        case .bass:
-            BassClefShape()
-        case .alto, .tenor:
-            AltoClefShape()
-        }
-    }
-    // Refactored notes row
-    private var notesRow: some View {
-        let keyCount = score?.keySignature.sharps ?? 0 + score?.keySignature.flats ?? 0
-        return HStack(spacing: 8) {
+        HStack(spacing: 8) {
             Spacer().frame(width: measure.measureNumber == 1 ? 60 + CGFloat(keyCount) * 12 : 24)
             ForEach(measure.notes) { note in
                 NoteView(note: note, clef: clef)
             }
         }
-    }
-}
-
-// Helper to type-erase Shape
-struct AnyShape: Shape {
-    private let pathFunc: (CGRect) -> Path
-    init<S: Shape>(_ shape: S) {
-        self.pathFunc = { rect in shape.path(in: rect) }
-    }
-    func path(in rect: CGRect) -> Path {
-        pathFunc(rect)
     }
 }
 
@@ -374,12 +278,14 @@ struct NoteView: View {
     }
     // MARK: - Accidental Rendering
     private var accidentalView: some View {
-        Group {
-            if let accidental = accidentalType() {
+        if let accidental = accidentalType() {
+            return AnyView(
                 accidentalShape(for: accidental)
                     .stroke(Color.primary, lineWidth: 2)
                     .frame(width: 10, height: 18)
-            }
+            )
+        } else {
+            return AnyView(EmptyView())
         }
     }
     private func accidentalShape(for type: AccidentalType) -> AnyShape {
