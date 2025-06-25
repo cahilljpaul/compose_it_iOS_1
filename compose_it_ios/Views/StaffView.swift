@@ -168,73 +168,67 @@ struct MeasureView: View {
     @Environment(\.score) var score: MusicScore?
     
     var body: some View {
-        ZStack(alignment: .leading) {
-            // Staff lines
-            VStack(spacing: 0) {
-                ForEach(0..<5) { _ in
+        VStack(spacing: 0) {
+            // Bar number above staff
+            Text("\(measure.measureNumber)")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 2)
+            ZStack(alignment: .leading) {
+                // Staff lines
+                VStack(spacing: 8) {
+                    ForEach(0..<5) { _ in
+                        Rectangle()
+                            .frame(height: 1)
+                            .foregroundColor(.primary)
+                    }
+                }
+                .frame(height: 48)
+                // Clef, key, time signature tightly grouped
+                if measure.measureNumber == 1 {
+                    HStack(spacing: 0) {
+                        clefShape()
+                            .stroke(Color.primary, lineWidth: 2)
+                            .frame(width: 20, height: 48)
+                        KeySignatureView(keySignature: score?.keySignature ?? KeySignature.commonKeys[0], clef: clef)
+                            .frame(height: 48)
+                            .padding(.leading, 2)
+                        TimeSignatureView(timeSignature: score?.timeSignature ?? MusicScore.TimeSignature.commonTimeSignatures[0])
+                            .frame(height: 48)
+                            .padding(.leading, 6)
+                        Spacer()
+                    }
+                    .frame(height: 48)
+                }
+                // Bar lines
+                HStack {
                     Rectangle()
-                        .frame(width: 80, height: 1)
+                        .frame(width: 2, height: 48)
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Rectangle()
+                        .frame(width: 2, height: 48)
                         .foregroundColor(.primary)
                 }
+                // Notes
+                NotesRowView(
+                    measure: measure,
+                    clef: clef,
+                    keyCount: (score?.keySignature.sharps ?? 0) + (score?.keySignature.flats ?? 0)
+                )
+                .frame(height: 48)
+                .padding(.leading, measure.measureNumber == 1 ? 70 : 48)
             }
-            // Clef
-            VStack {
-                clefShape()
-                    .stroke(Color.primary, lineWidth: 2)
-                    .frame(width: 20, height: 50)
-                    .offset(x: 0, y: 0)
-                Spacer()
-            }
-            .frame(width: 80, height: 50)
-            // Key signature (only in first measure)
-            if let score = score, measure.measureNumber == 1 {
-                VStack {
-                    KeySignatureView(keySignature: score.keySignature, clef: clef)
-                        .frame(height: 50)
-                        .offset(x: 20, y: 0)
-                    Spacer()
-                }
-                .frame(width: 80, height: 50)
-                // Time signature after key signature
-                VStack {
-                    TimeSignatureView(timeSignature: score.timeSignature)
-                        .frame(height: 50)
-                        .offset(x: 38 + CGFloat(max(score.keySignature.sharps, score.keySignature.flats)) * 12, y: 0)
-                    Spacer()
-                }
-                .frame(width: 80, height: 50)
-            }
-            // Bar lines
-            VStack {
-                Rectangle()
-                    .frame(width: 2, height: 50)
-                    .foregroundColor(.primary)
-                    .offset(x: 0, y: 0)
-                Spacer()
-                Rectangle()
-                    .frame(width: 2, height: 50)
-                    .foregroundColor(.primary)
-                    .offset(x: 78, y: 0)
-            }
-            .frame(width: 80, height: 50)
-            // Notes
-            NotesRowView(
-                measure: measure,
-                clef: clef,
-                keyCount: (score?.keySignature.sharps ?? 0) + (score?.keySignature.flats ?? 0)
-            )
-            .frame(width: 80, height: 50)
-            .padding(.top, 4)
-            // Measure number
-            VStack {
-                Text("\(measure.measureNumber)")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .offset(x: 60, y: -10)
-                Spacer()
-            }
+            .frame(width: 180, height: 60)
+            // Bar number below staff, centered
+            Text("\(measure.measureNumber)")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 2)
         }
-        .frame(width: 100, height: 60)
+        .frame(width: 180, height: 80)
     }
     private func clefShape() -> AnyShape {
         switch clef {
@@ -251,7 +245,7 @@ struct SystemRowView: View {
     let clef: Instrument.Clef
     @Environment(\.score) var score: MusicScore?
     var body: some View {
-        HStack(alignment: .top, spacing: 20) {
+        HStack(alignment: .top, spacing: 32) {
             ForEach(systemMeasures) { measure in
                 MeasureView(measure: measure, instrument: selectedInstrument, clef: clef)
             }
@@ -306,7 +300,7 @@ struct NotesRowView: View {
     let keyCount: Int
     @Environment(\.score) var score: MusicScore?
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 32) {
             Spacer().frame(width: measure.measureNumber == 1 ? 60 + CGFloat(keyCount) * 12 : 24)
             ForEach(measure.notes) { note in
                 NoteView(note: note, clef: clef)
@@ -325,7 +319,6 @@ struct NoteHeadWithStemAndFlags: View {
             NoteHeadShape()
                 .fill(Color.primary)
                 .frame(width: 14, height: 10)
-                .offset(y: noteYOffset)
             Rectangle()
                 .frame(width: 2, height: 20)
                 .foregroundColor(.primary)
@@ -349,25 +342,25 @@ struct NoteView: View {
     @Environment(\.score) var score: MusicScore?
     
     var body: some View {
-        VStack(spacing: 2) {
-            if note.isRest {
+        ZStack(alignment: .center) {
+            // Ledger lines
+            ForEach(ledgerLineYs(), id: \ .self) { y in
                 Rectangle()
-                    .frame(width: 8, height: 12)
-                    .foregroundColor(.secondary)
-            } else {
-                HStack(spacing: 2) {
-                    accidentalView
-                    NoteHeadWithStemAndFlags(
-                        note: note,
-                        stemDirection: stemDirection,
-                        noteYOffset: noteYOffset(),
-                        flagCount: flagCount(for: note.duration)
-                    )
-                }
+                    .frame(width: 20, height: 1)
+                    .foregroundColor(.primary)
+                    .offset(y: y)
             }
-            Text(note.duration.rawValue)
-                .font(.caption2)
-                .foregroundColor(.secondary)
+            HStack(spacing: 0) {
+                accidentalView
+                    .offset(x: -8, y: noteYOffset()) // Move accidentals closer and align vertically
+                NoteHeadWithStemAndFlags(
+                    note: note,
+                    stemDirection: stemDirection,
+                    noteYOffset: noteYOffset(),
+                    flagCount: flagCount(for: note.duration)
+                )
+            }
+            .offset(y: noteYOffset())
         }
     }
     // MARK: - Accidental Rendering
@@ -433,6 +426,36 @@ struct NoteView: View {
         case .thirtySecond: return 3
         default: return nil
         }
+    }
+    // Helper for ledger lines
+    private func ledgerLineYs() -> [CGFloat] {
+        // Staff lines: 0 (top) to 4 (bottom), spacing 8
+        // Treble: E4 (top, midi 64), F5 (bottom, midi 77)
+        // Alto: G3 (top, midi 55), A4 (bottom, midi 69)
+        // Bass: G2 (top, midi 43), A3 (bottom, midi 57)
+        let staffSpacing: CGFloat = 8
+        let midi = midiNumber(for: note.pitch)
+        let (top, bottom): (Int, Int)
+        switch clef {
+        case .treble: top = 64; bottom = 77
+        case .alto, .tenor: top = 55; bottom = 69
+        case .bass: top = 43; bottom = 57
+        }
+        var lines: [CGFloat] = []
+        // Above
+        var m = midi
+        var y = CGFloat(top - midi) * staffSpacing / 2.0
+        while m < top {
+            if (top - m) % 2 == 0 { lines.append(CGFloat(top - m) * staffSpacing / 2.0) }
+            m += 1
+        }
+        // Below
+        m = midi
+        while m > bottom {
+            if (m - bottom) % 2 == 0 { lines.append(CGFloat(top - m) * staffSpacing / 2.0) }
+            m -= 1
+        }
+        return lines
     }
 }
 
