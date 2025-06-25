@@ -161,6 +161,109 @@ extension Array {
     }
 }
 
+struct MeasureView: View {
+    let measure: MusicScore.Measure
+    let instrument: Instrument?
+    let clef: Instrument.Clef
+    @Environment(\.score) var score: MusicScore?
+    
+    var body: some View {
+        ZStack(alignment: .leading) {
+            // Staff lines
+            VStack(spacing: 0) {
+                ForEach(0..<5) { _ in
+                    Rectangle()
+                        .frame(width: 80, height: 1)
+                        .foregroundColor(.primary)
+                }
+            }
+            // Clef
+            VStack {
+                clefShape()
+                    .stroke(Color.primary, lineWidth: 2)
+                    .frame(width: 20, height: 50)
+                    .offset(x: 0, y: 0)
+                Spacer()
+            }
+            .frame(width: 80, height: 50)
+            // Key signature (only in first measure)
+            if let score = score, measure.measureNumber == 1 {
+                VStack {
+                    KeySignatureView(keySignature: score.keySignature, clef: clef)
+                        .frame(height: 50)
+                        .offset(x: 20, y: 0)
+                    Spacer()
+                }
+                .frame(width: 80, height: 50)
+                // Time signature after key signature
+                VStack {
+                    TimeSignatureView(timeSignature: score.timeSignature)
+                        .frame(height: 50)
+                        .offset(x: 38 + CGFloat(max(score.keySignature.sharps, score.keySignature.flats)) * 12, y: 0)
+                    Spacer()
+                }
+                .frame(width: 80, height: 50)
+            }
+            // Bar lines
+            VStack {
+                Rectangle()
+                    .frame(width: 2, height: 50)
+                    .foregroundColor(.primary)
+                    .offset(x: 0, y: 0)
+                Spacer()
+                Rectangle()
+                    .frame(width: 2, height: 50)
+                    .foregroundColor(.primary)
+                    .offset(x: 78, y: 0)
+            }
+            .frame(width: 80, height: 50)
+            // Notes
+            NotesRowView(
+                measure: measure,
+                clef: clef,
+                keyCount: (score?.keySignature.sharps ?? 0) + (score?.keySignature.flats ?? 0)
+            )
+            .frame(width: 80, height: 50)
+            .padding(.top, 4)
+            // Measure number
+            VStack {
+                Text("\(measure.measureNumber)")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .offset(x: 60, y: -10)
+                Spacer()
+            }
+        }
+        .frame(width: 100, height: 60)
+    }
+    private func clefShape() -> some View {
+        switch clef {
+        case .treble:
+            TrebleClefShape()
+        case .bass:
+            BassClefShape()
+        case .alto, .tenor:
+            AltoClefShape()
+        }
+    }
+}
+
+struct SystemRowView: View {
+    let systemMeasures: [MusicScore.Measure]
+    let selectedInstrument: Instrument?
+    let clef: Instrument.Clef
+    @Environment(\.score) var score: MusicScore?
+    var body: some View {
+        HStack(alignment: .top, spacing: 20) {
+            ForEach(systemMeasures) { measure in
+                MeasureView(measure: measure, instrument: selectedInstrument, clef: clef)
+                    .environmentScore(score!)
+            }
+        }
+        .padding(.horizontal)
+    }
+}
+
 struct StaffView: View {
     let score: MusicScore
     let selectedInstrument: Instrument?
@@ -186,13 +289,8 @@ struct StaffView: View {
             .padding(.horizontal)
             // Multi-measure systems
             ForEach(Array(chunked(score.measures, size: measuresPerSystem).enumerated()), id: \.offset) { (systemIndex, systemMeasures) in
-                HStack(alignment: .top, spacing: 20) {
-                    ForEach(systemMeasures) { measure in
-                        MeasureView(measure: measure, instrument: selectedInstrument, clef: selectedInstrument?.clef ?? .treble)
-                            .environmentScore(score)
-                    }
-                }
-                .padding(.horizontal)
+                SystemRowView(systemMeasures: systemMeasures, selectedInstrument: selectedInstrument, clef: selectedInstrument?.clef ?? .treble)
+                    .environmentScore(score)
             }
             Spacer()
         }
