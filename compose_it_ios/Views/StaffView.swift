@@ -285,8 +285,8 @@ struct StaffView: View {
             .padding(.horizontal)
             // Multi-measure systems
             ForEach(Array(chunked(score.measures, size: measuresPerSystem).enumerated()), id: \.offset) { (systemIndex, systemMeasures) in
-                SystemRowView(systemMeasures: systemMeasures, selectedInstrument: selectedInstrument, clef: selectedInstrument?.clef ?? .treble)
-                    .environmentScore(score)
+                let systemView = SystemRowView(systemMeasures: systemMeasures, selectedInstrument: selectedInstrument, clef: selectedInstrument?.clef ?? .treble)
+                systemView.environmentScore(score)
             }
             Spacer()
         }
