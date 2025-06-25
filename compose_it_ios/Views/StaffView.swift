@@ -236,14 +236,11 @@ struct MeasureView: View {
         }
         .frame(width: 100, height: 60)
     }
-    private func clefShape() -> some View {
+    private func clefShape() -> AnyShape {
         switch clef {
-        case .treble:
-            TrebleClefShape()
-        case .bass:
-            BassClefShape()
-        case .alto, .tenor:
-            AltoClefShape()
+        case .treble: return AnyShape(TrebleClefShape())
+        case .bass: return AnyShape(BassClefShape())
+        case .alto, .tenor: return AnyShape(AltoClefShape())
         }
     }
 }
@@ -257,7 +254,6 @@ struct SystemRowView: View {
         HStack(alignment: .top, spacing: 20) {
             ForEach(systemMeasures) { measure in
                 MeasureView(measure: measure, instrument: selectedInstrument, clef: clef)
-                    .environmentScore(score!)
             }
         }
         .padding(.horizontal)
