@@ -319,6 +319,7 @@ struct NoteFlagShape: Shape {
 struct NoteView: View {
     let note: MusicScore.Measure.Note
     let clef: Instrument.Clef
+    let staffHeight: CGFloat
     @Environment(\.score) var score: MusicScore?
     
     var body: some View {
@@ -353,12 +354,15 @@ struct NoteView: View {
                         note: note,
                         stemDirection: stemDirection,
                         noteYOffset: noteYOffset(),
-                        flagCount: flagCount(for: note.duration)
+                        flagCount: flagCount(for: note.duration),
+                        staffHeight: staffHeight
                     )
                 }
                 .offset(y: noteYOffset())
             }
         }
+        .frame(height: staffHeight)
+        .clipped()
     }
     
     // MARK: - Note Positioning
@@ -495,6 +499,7 @@ struct NoteHeadWithStemAndFlags: View {
     let stemDirection: NoteView.StemDirection
     let noteYOffset: CGFloat
     let flagCount: Int?
+    let staffHeight: CGFloat
     
     var body: some View {
         ZStack(alignment: stemDirection == .up ? .bottomLeading : .topTrailing) {
@@ -502,23 +507,23 @@ struct NoteHeadWithStemAndFlags: View {
             NoteHeadShape(isHollow: note.duration == .half || note.duration == .whole)
                 .fill(note.duration == .half || note.duration == .whole ? Color.clear : Color.primary)
                 .stroke(Color.primary, lineWidth: note.duration == .half || note.duration == .whole ? 1.5 : 0)
-                .frame(width: 12, height: 8)
+                .frame(width: staffHeight * 0.18, height: staffHeight * 0.12)
             
             // Stem
             Rectangle()
-                .frame(width: 1.5, height: 24)
+                .frame(width: 1.5, height: staffHeight * 0.4)
                 .foregroundColor(.primary)
-                .offset(x: stemDirection == .up ? 10 : 0, y: stemDirection == .up ? -12 : 12)
+                .offset(x: stemDirection == .up ? staffHeight * 0.15 : 0, y: stemDirection == .up ? -staffHeight * 0.18 : staffHeight * 0.18)
             
             // Flags
             if let flagCount = flagCount, flagCount > 0 {
                 ForEach(0..<flagCount, id: \.self) { i in
                     NoteFlagShape(up: stemDirection == .up)
                         .stroke(Color.primary, lineWidth: 1.5)
-                        .frame(width: 8, height: 8)
+                        .frame(width: staffHeight * 0.12, height: staffHeight * 0.12)
                         .offset(
-                            x: stemDirection == .up ? 12 : -2,
-                            y: stemDirection == .up ? -20 - CGFloat(i * 6) : 20 + CGFloat(i * 6)
+                            x: stemDirection == .up ? staffHeight * 0.18 : -staffHeight * 0.03,
+                            y: stemDirection == .up ? -staffHeight * 0.32 - CGFloat(i) * staffHeight * 0.08 : staffHeight * 0.32 + CGFloat(i) * staffHeight * 0.08
                         )
                 }
             }
@@ -531,6 +536,8 @@ struct MeasureView: View {
     let measure: MusicScore.Measure
     let instrument: Instrument?
     let clef: Instrument.Clef
+    let staffHeight: CGFloat
+    let measureWidth: CGFloat
     @Environment(\.score) var score: MusicScore?
     
     var body: some View {
@@ -544,42 +551,42 @@ struct MeasureView: View {
             
             ZStack(alignment: .leading) {
                 // Staff lines
-                VStack(spacing: 8) {
+                VStack(spacing: staffHeight / 8) {
                     ForEach(0..<5) { _ in
                         Rectangle()
                             .frame(height: 1)
                             .foregroundColor(.primary)
                     }
                 }
-                .frame(height: 48)
+                .frame(height: staffHeight)
                 
                 // Clef, key signature, time signature
                 if measure.measureNumber == 1 {
                     HStack(spacing: 4) {
                         clefShape()
                             .stroke(Color.primary, lineWidth: 2)
-                            .frame(width: 16, height: 48)
+                            .frame(width: 18, height: staffHeight)
                         
                         KeySignatureView(keySignature: score?.keySignature ?? KeySignature.commonKeys[0], clef: clef)
-                            .frame(height: 48)
+                            .frame(height: staffHeight)
                         
                         TimeSignatureView(timeSignature: score?.timeSignature ?? MusicScore.TimeSignature.commonTimeSignatures[0])
-                            .frame(height: 48)
+                            .frame(height: staffHeight)
                             .padding(.leading, 4)
                         
                         Spacer()
                     }
-                    .frame(height: 48)
+                    .frame(height: staffHeight)
                 }
                 
                 // Bar lines
                 HStack {
                     Rectangle()
-                        .frame(width: 2, height: 48)
+                        .frame(width: 2, height: staffHeight)
                         .foregroundColor(.primary)
                     Spacer()
                     Rectangle()
-                        .frame(width: 2, height: 48)
+                        .frame(width: 2, height: staffHeight)
                         .foregroundColor(.primary)
                 }
                 
@@ -587,12 +594,13 @@ struct MeasureView: View {
                 NotesRowView(
                     measure: measure,
                     clef: clef,
-                    keyCount: (score?.keySignature.sharps ?? 0) + (score?.keySignature.flats ?? 0)
+                    keyCount: (score?.keySignature.sharps ?? 0) + (score?.keySignature.flats ?? 0),
+                    staffHeight: staffHeight
                 )
-                .frame(height: 48)
+                .frame(height: staffHeight)
                 .padding(.leading, measure.measureNumber == 1 ? 60 : 24)
             }
-            .frame(width: 160, height: 60)
+            .frame(width: measureWidth, height: staffHeight + 12)
             
             // Measure number below
             Text("\(measure.measureNumber)")
@@ -601,7 +609,7 @@ struct MeasureView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 2)
         }
-        .frame(width: 160, height: 80)
+        .frame(width: measureWidth, height: staffHeight + 32)
     }
     
     private func clefShape() -> AnyShape {
@@ -618,15 +626,18 @@ struct NotesRowView: View {
     let measure: MusicScore.Measure
     let clef: Instrument.Clef
     let keyCount: Int
+    let staffHeight: CGFloat
     
     var body: some View {
-        HStack(spacing: 24) {
+        HStack(spacing: 28) {
             Spacer().frame(width: measure.measureNumber == 1 ? 40 + CGFloat(keyCount) * 10 : 16)
             
             ForEach(measure.notes) { note in
-                NoteView(note: note, clef: clef)
+                NoteView(note: note, clef: clef, staffHeight: staffHeight)
             }
         }
+        .frame(height: staffHeight)
+        .clipped()
     }
 }
 
@@ -635,15 +646,23 @@ struct SystemRowView: View {
     let systemMeasures: [MusicScore.Measure]
     let selectedInstrument: Instrument?
     let clef: Instrument.Clef
+    let staffHeight: CGFloat
+    let measureWidth: CGFloat
     @Environment(\.score) var score: MusicScore?
     
     var body: some View {
-        HStack(alignment: .top, spacing: 24) {
+        HStack(alignment: .top, spacing: 0) {
             ForEach(systemMeasures) { measure in
-                MeasureView(measure: measure, instrument: selectedInstrument, clef: clef)
+                MeasureView(
+                    measure: measure,
+                    instrument: selectedInstrument,
+                    clef: clef,
+                    staffHeight: staffHeight,
+                    measureWidth: measureWidth
+                )
             }
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 12)
     }
 }
 
@@ -652,6 +671,8 @@ struct StaffView: View {
     let score: MusicScore
     let selectedInstrument: Instrument?
     let measuresPerSystem: Int = 4
+    let staffHeight: CGFloat = 64
+    let measureWidth: CGFloat = 120
     
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -673,16 +694,22 @@ struct StaffView: View {
             }
             .padding(.horizontal)
             
-            // Multi-measure systems
-            ForEach(Array(chunked(score.measures, size: measuresPerSystem).enumerated()), id: \.offset) { (systemIndex, systemMeasures) in
-                SystemRowView(
-                    systemMeasures: systemMeasures,
-                    selectedInstrument: selectedInstrument,
-                    clef: selectedInstrument?.clef ?? .treble
-                )
-                .environment(\.score, score)
+            // Multi-measure systems in a horizontal ScrollView
+            ScrollView(.horizontal, showsIndicators: true) {
+                VStack(alignment: .leading, spacing: 24) {
+                    ForEach(Array(chunked(score.measures, size: measuresPerSystem).enumerated()), id: \.offset) { (systemIndex, systemMeasures) in
+                        SystemRowView(
+                            systemMeasures: systemMeasures,
+                            selectedInstrument: selectedInstrument,
+                            clef: selectedInstrument?.clef ?? .treble,
+                            staffHeight: staffHeight,
+                            measureWidth: measureWidth
+                        )
+                        .environment(\.score, score)
+                    }
+                }
             }
-            
+            .frame(height: staffHeight + 40) // Add padding for measure numbers
             Spacer()
         }
         .background(Color(.systemBackground))

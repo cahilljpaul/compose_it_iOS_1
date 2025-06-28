@@ -75,16 +75,16 @@ extension MusicScore {
         instruments: [Instrument]
     ) -> MusicScore {
         var measures: [Measure] = []
-        
+        let instrument = instruments.first
         for measureIndex in 0..<numberOfMeasures {
             let notes = generateRandomNotesForMeasure(
                 timeSignature: timeSignature,
                 keySignature: keySignature,
-                measureNumber: measureIndex + 1
+                measureNumber: measureIndex + 1,
+                instrument: instrument
             )
             measures.append(Measure(notes: notes, measureNumber: measureIndex + 1))
         }
-        
         return MusicScore(
             title: title,
             keySignature: keySignature,
@@ -98,39 +98,33 @@ extension MusicScore {
     private static func generateRandomNotesForMeasure(
         timeSignature: TimeSignature,
         keySignature: KeySignature,
-        measureNumber: Int
+        measureNumber: Int,
+        instrument: Instrument? = nil
     ) -> [Measure.Note] {
         var notes: [Measure.Note] = []
         var remainingBeats = Double(timeSignature.beats)
-        
-        // Create a more musical pattern
         let pattern = generateMusicalPattern(timeSignature: timeSignature, measureNumber: measureNumber)
-        
         for patternElement in pattern {
             guard patternElement <= remainingBeats else { break }
-            
-            let isRest = Bool.random() && patternElement <= 1.0 // Only allow rests for shorter notes
+            let isRest = Bool.random() && patternElement <= 1.0
             let note: Measure.Note
-            
             if isRest {
                 note = Measure.Note(
-                    pitch: Instrument.Note(pitch: .c, octave: 4), // Placeholder for rest
+                    pitch: Instrument.Note(pitch: .c, octave: 4),
                     duration: durationFromValue(patternElement),
                     isRest: true
                 )
             } else {
-                let randomPitch = generateRandomPitchInKey(keySignature: keySignature, measureNumber: measureNumber)
+                let randomPitch = generateRandomPitchInKey(keySignature: keySignature, measureNumber: measureNumber, instrument: instrument)
                 note = Measure.Note(
                     pitch: randomPitch,
                     duration: durationFromValue(patternElement),
                     isRest: false
                 )
             }
-            
             notes.append(note)
             remainingBeats -= patternElement
         }
-        
         return notes
     }
     
@@ -172,16 +166,26 @@ extension MusicScore {
         }
     }
     
-    private static func generateRandomPitchInKey(keySignature: KeySignature, measureNumber: Int) -> Instrument.Note {
+    private static func generateRandomPitchInKey(keySignature: KeySignature, measureNumber: Int, instrument: Instrument? = nil) -> Instrument.Note {
         // Generate pitches that are more likely to be in the key signature
         let keyPitches = getPitchesInKey(keySignature)
         let randomPitch = keyPitches.randomElement() ?? .c
-        
-        // Vary octave based on measure number for more interesting melodies
-        let baseOctave = 4
-        let octaveVariation = (measureNumber % 3) - 1 // -1, 0, or 1
-        let randomOctave = baseOctave + octaveVariation
-        
+
+        // Limit octave range to the staff for the instrument's clef
+        let (minOctave, maxOctave): (Int, Int)
+        if let instrument = instrument {
+            switch instrument.clef {
+            case .treble:
+                minOctave = 4; maxOctave = 5 // C4 to C5 (middle C to one octave above)
+            case .alto, .tenor:
+                minOctave = 3; maxOctave = 5 // C3 to C5
+            case .bass:
+                minOctave = 2; maxOctave = 4 // C2 to C4
+            }
+        } else {
+            minOctave = 3; maxOctave = 5
+        }
+        let randomOctave = Int.random(in: minOctave...maxOctave)
         return Instrument.Note(pitch: randomPitch, octave: randomOctave)
     }
     
