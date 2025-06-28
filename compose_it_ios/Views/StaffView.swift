@@ -1,21 +1,37 @@
 import SwiftUI
 
-// Accidental type for music notation
+// MARK: - Accidental Types
 enum AccidentalType {
     case sharp, flat, natural
 }
 
-// MARK: - Clef Shapes
+// MARK: - Improved Clef Shapes
 struct TrebleClefShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        // Simple treble clef approximation (for demo)
         let w = rect.width, h = rect.height
-        path.move(to: CGPoint(x: w * 0.5, y: h * 0.1))
-        path.addCurve(to: CGPoint(x: w * 0.5, y: h * 0.9),
-                      control1: CGPoint(x: w * 0.9, y: h * 0.2),
-                      control2: CGPoint(x: w * 0.1, y: h * 0.8))
-        path.addArc(center: CGPoint(x: w * 0.5, y: h * 0.7), radius: w * 0.18, startAngle: .degrees(0), endAngle: .degrees(360), clockwise: false)
+        
+        // G clef centered on G4 (second line from bottom)
+        let centerY = h * 0.6 // G4 position
+        let radius = min(w, h) * 0.15
+        
+        // Main spiral
+        path.move(to: CGPoint(x: w * 0.3, y: centerY + radius * 2))
+        path.addCurve(
+            to: CGPoint(x: w * 0.5, y: centerY),
+            control1: CGPoint(x: w * 0.4, y: centerY + radius * 1.5),
+            control2: CGPoint(x: w * 0.45, y: centerY + radius * 0.5)
+        )
+        path.addCurve(
+            to: CGPoint(x: w * 0.7, y: centerY - radius),
+            control1: CGPoint(x: w * 0.55, y: centerY - radius * 0.5),
+            control2: CGPoint(x: w * 0.65, y: centerY - radius * 0.8)
+        )
+        
+        // Cross stroke
+        path.move(to: CGPoint(x: w * 0.2, y: centerY - radius * 0.5))
+        path.addLine(to: CGPoint(x: w * 0.8, y: centerY - radius * 0.5))
+        
         return path
     }
 }
@@ -24,12 +40,23 @@ struct BassClefShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         let w = rect.width, h = rect.height
-        // Simple bass clef: a dot and a curve
-        path.addArc(center: CGPoint(x: w * 0.4, y: h * 0.6), radius: w * 0.18, startAngle: .degrees(0), endAngle: .degrees(270), clockwise: true)
-        path.move(to: CGPoint(x: w * 0.7, y: h * 0.5))
-        path.addEllipse(in: CGRect(x: w * 0.7, y: h * 0.45, width: w * 0.08, height: w * 0.08))
-        path.move(to: CGPoint(x: w * 0.7, y: h * 0.7))
-        path.addEllipse(in: CGRect(x: w * 0.7, y: h * 0.65, width: w * 0.08, height: w * 0.08))
+        
+        // F clef centered on F3 (fourth line from bottom)
+        let centerY = h * 0.4 // F3 position
+        let radius = min(w, h) * 0.12
+        
+        // Two dots
+        path.addEllipse(in: CGRect(x: w * 0.3, y: centerY - radius * 1.5, width: radius * 0.8, height: radius * 0.8))
+        path.addEllipse(in: CGRect(x: w * 0.3, y: centerY + radius * 0.5, width: radius * 0.8, height: radius * 0.8))
+        
+        // Curved line
+        path.move(to: CGPoint(x: w * 0.5, y: centerY - radius * 2))
+        path.addCurve(
+            to: CGPoint(x: w * 0.5, y: centerY + radius * 2),
+            control1: CGPoint(x: w * 0.7, y: centerY - radius),
+            control2: CGPoint(x: w * 0.7, y: centerY + radius)
+        )
+        
         return path
     }
 }
@@ -38,28 +65,41 @@ struct AltoClefShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         let w = rect.width, h = rect.height
-        // Simple alto clef: a stylized C
-        path.move(to: CGPoint(x: w * 0.2, y: h * 0.5))
-        path.addLine(to: CGPoint(x: w * 0.8, y: h * 0.5))
-        path.move(to: CGPoint(x: w * 0.5, y: h * 0.2))
-        path.addLine(to: CGPoint(x: w * 0.5, y: h * 0.8))
+        
+        // C clef centered on C4 (middle line)
+        let centerY = h * 0.5
+        let radius = min(w, h) * 0.15
+        
+        // Two curves forming a C
+        path.move(to: CGPoint(x: w * 0.3, y: centerY))
+        path.addCurve(
+            to: CGPoint(x: w * 0.7, y: centerY),
+            control1: CGPoint(x: w * 0.5, y: centerY - radius),
+            control2: CGPoint(x: w * 0.5, y: centerY - radius)
+        )
+        
         return path
     }
 }
 
+// MARK: - Improved Accidental Shapes
 struct SharpShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         let w = rect.width, h = rect.height
-        // Simple sharp: two vertical and two slanted lines
+        
+        // Two vertical lines
         path.move(to: CGPoint(x: w * 0.3, y: 0))
         path.addLine(to: CGPoint(x: w * 0.3, y: h))
         path.move(to: CGPoint(x: w * 0.7, y: 0))
         path.addLine(to: CGPoint(x: w * 0.7, y: h))
+        
+        // Two horizontal lines
         path.move(to: CGPoint(x: 0, y: h * 0.35))
         path.addLine(to: CGPoint(x: w, y: h * 0.25))
         path.move(to: CGPoint(x: 0, y: h * 0.65))
         path.addLine(to: CGPoint(x: w, y: h * 0.55))
+        
         return path
     }
 }
@@ -68,11 +108,18 @@ struct FlatShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         let w = rect.width, h = rect.height
-        // Simple flat: vertical line and a curve
+        
+        // Vertical line
         path.move(to: CGPoint(x: w * 0.5, y: 0))
         path.addLine(to: CGPoint(x: w * 0.5, y: h))
+        
+        // Curved part
         path.move(to: CGPoint(x: w * 0.5, y: h * 0.6))
-        path.addQuadCurve(to: CGPoint(x: w * 0.8, y: h * 0.8), control: CGPoint(x: w * 0.7, y: h * 0.5))
+        path.addQuadCurve(
+            to: CGPoint(x: w * 0.8, y: h * 0.8),
+            control: CGPoint(x: w * 0.7, y: h * 0.5)
+        )
+        
         return path
     }
 }
@@ -81,19 +128,92 @@ struct NaturalShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         let w = rect.width, h = rect.height
-        // Simple natural: two vertical and two horizontal lines
+        
+        // Two vertical lines
         path.move(to: CGPoint(x: w * 0.3, y: 0))
         path.addLine(to: CGPoint(x: w * 0.3, y: h))
         path.move(to: CGPoint(x: w * 0.7, y: 0))
         path.addLine(to: CGPoint(x: w * 0.7, y: h))
-        path.move(to: CGPoint(x: w * 0.3, y: h * 0.5))
+        
+        // Two horizontal lines
+        path.move(to: CGPoint(x: w * 0.3, y: h * 0.3))
         path.addLine(to: CGPoint(x: w * 0.7, y: h * 0.3))
         path.move(to: CGPoint(x: w * 0.3, y: h * 0.7))
-        path.addLine(to: CGPoint(x: w * 0.7, y: h * 0.5))
+        path.addLine(to: CGPoint(x: w * 0.7, y: h * 0.7))
+        
         return path
     }
 }
 
+// MARK: - Rest Shapes
+struct RestShape: Shape {
+    let duration: MusicScore.Measure.Note.Duration
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width, h = rect.height
+        
+        switch duration {
+        case .whole:
+            // Whole rest: rectangle hanging from top line
+            path.addRect(CGRect(x: w * 0.3, y: 0, width: w * 0.4, height: h * 0.3))
+        case .half:
+            // Half rest: rectangle sitting on middle line
+            path.addRect(CGRect(x: w * 0.3, y: h * 0.35, width: w * 0.4, height: h * 0.3))
+        case .quarter:
+            // Quarter rest: squiggly line
+            path.move(to: CGPoint(x: w * 0.2, y: h * 0.2))
+            path.addCurve(
+                to: CGPoint(x: w * 0.8, y: h * 0.8),
+                control1: CGPoint(x: w * 0.4, y: h * 0.1),
+                control2: CGPoint(x: w * 0.6, y: h * 0.9)
+            )
+        case .eighth:
+            // Eighth rest: squiggly line with flag
+            path.move(to: CGPoint(x: w * 0.2, y: h * 0.2))
+            path.addCurve(
+                to: CGPoint(x: w * 0.8, y: h * 0.8),
+                control1: CGPoint(x: w * 0.4, y: h * 0.1),
+                control2: CGPoint(x: w * 0.6, y: h * 0.9)
+            )
+            // Add flag
+            path.move(to: CGPoint(x: w * 0.8, y: h * 0.8))
+            path.addLine(to: CGPoint(x: w * 0.9, y: h * 0.6))
+        case .sixteenth:
+            // Sixteenth rest: squiggly line with two flags
+            path.move(to: CGPoint(x: w * 0.2, y: h * 0.2))
+            path.addCurve(
+                to: CGPoint(x: w * 0.8, y: h * 0.8),
+                control1: CGPoint(x: w * 0.4, y: h * 0.1),
+                control2: CGPoint(x: w * 0.6, y: h * 0.9)
+            )
+            // Add two flags
+            path.move(to: CGPoint(x: w * 0.8, y: h * 0.8))
+            path.addLine(to: CGPoint(x: w * 0.9, y: h * 0.6))
+            path.move(to: CGPoint(x: w * 0.8, y: h * 0.8))
+            path.addLine(to: CGPoint(x: w * 0.9, y: h * 0.4))
+        case .thirtySecond:
+            // Thirty-second rest: squiggly line with three flags
+            path.move(to: CGPoint(x: w * 0.2, y: h * 0.2))
+            path.addCurve(
+                to: CGPoint(x: w * 0.8, y: h * 0.8),
+                control1: CGPoint(x: w * 0.4, y: h * 0.1),
+                control2: CGPoint(x: w * 0.6, y: h * 0.9)
+            )
+            // Add three flags
+            path.move(to: CGPoint(x: w * 0.8, y: h * 0.8))
+            path.addLine(to: CGPoint(x: w * 0.9, y: h * 0.6))
+            path.move(to: CGPoint(x: w * 0.8, y: h * 0.8))
+            path.addLine(to: CGPoint(x: w * 0.9, y: h * 0.4))
+            path.move(to: CGPoint(x: w * 0.8, y: h * 0.8))
+            path.addLine(to: CGPoint(x: w * 0.9, y: h * 0.2))
+        }
+        
+        return path
+    }
+}
+
+// MARK: - Key Signature View
 struct KeySignatureView: View {
     let keySignature: KeySignature
     let clef: Instrument.Clef
@@ -102,35 +222,38 @@ struct KeySignatureView: View {
         HStack(spacing: 2) {
             ForEach(0..<keySignature.sharps, id: \.self) { i in
                 SharpShape()
-                    .stroke(Color.primary, lineWidth: 2)
-                    .frame(width: 10, height: 18)
+                    .stroke(Color.primary, lineWidth: 1.5)
+                    .frame(width: 8, height: 16)
                     .offset(y: sharpOffset(index: i, clef: clef))
             }
             ForEach(0..<keySignature.flats, id: \.self) { i in
                 FlatShape()
-                    .stroke(Color.primary, lineWidth: 2)
-                    .frame(width: 10, height: 18)
+                    .stroke(Color.primary, lineWidth: 1.5)
+                    .frame(width: 8, height: 16)
                     .offset(y: flatOffset(index: i, clef: clef))
             }
         }
     }
-    // Staff positions for sharps/flats (G major order)
+    
     private func sharpOffset(index: Int, clef: Instrument.Clef) -> CGFloat {
-        // Treble: F C G D A E B (top to bottom)
+        // Sharp order: F C G D A E B
         let trebleOffsets: [CGFloat] = [-16, -8, -20, -12, -24, -16, -28]
         let bassOffsets: [CGFloat] = [-4, 4, -8, 0, -12, -4, -16]
         let altoOffsets: [CGFloat] = [-10, -2, -14, -6, -18, -10, -22]
+        
         switch clef {
         case .treble: return trebleOffsets[safe: index] ?? 0
         case .bass: return bassOffsets[safe: index] ?? 0
         case .alto, .tenor: return altoOffsets[safe: index] ?? 0
         }
     }
+    
     private func flatOffset(index: Int, clef: Instrument.Clef) -> CGFloat {
-        // Treble: B E A D G C F (top to bottom)
+        // Flat order: B E A D G C F
         let trebleOffsets: [CGFloat] = [-8, 0, -12, -4, -16, -8, -20]
         let bassOffsets: [CGFloat] = [4, 12, 0, 8, -4, 4, -8]
         let altoOffsets: [CGFloat] = [-2, 6, -6, 2, -10, -2, -14]
+        
         switch clef {
         case .treble: return trebleOffsets[safe: index] ?? 0
         case .bass: return bassOffsets[safe: index] ?? 0
@@ -139,28 +262,271 @@ struct KeySignatureView: View {
     }
 }
 
+// MARK: - Time Signature View
 struct TimeSignatureView: View {
     let timeSignature: MusicScore.TimeSignature
+    
     var body: some View {
         VStack(spacing: 0) {
             Text("\(timeSignature.beats)")
-                .font(.system(size: 16, weight: .bold, design: .serif))
+                .font(.system(size: 14, weight: .bold, design: .serif))
                 .foregroundColor(.primary)
             Text("\(timeSignature.beatType)")
-                .font(.system(size: 16, weight: .bold, design: .serif))
+                .font(.system(size: 14, weight: .bold, design: .serif))
                 .foregroundColor(.primary)
         }
-        .frame(width: 16)
+        .frame(width: 12)
     }
 }
 
-// Array safe subscript
-extension Array {
-    subscript(safe index: Int) -> Element? {
-        (startIndex..<endIndex).contains(index) ? self[index] : nil
+// MARK: - Note Head Shapes
+struct NoteHeadShape: Shape {
+    let isHollow: Bool
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.addEllipse(in: rect)
+        return path
     }
 }
 
+struct NoteFlagShape: Shape {
+    let up: Bool
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width, h = rect.height
+        
+        if up {
+            path.move(to: CGPoint(x: 0, y: h))
+            path.addQuadCurve(
+                to: CGPoint(x: w, y: h * 0.5),
+                control: CGPoint(x: w * 0.5, y: h * 1.2)
+            )
+        } else {
+            path.move(to: CGPoint(x: 0, y: 0))
+            path.addQuadCurve(
+                to: CGPoint(x: w, y: h * 0.5),
+                control: CGPoint(x: w * 0.5, y: -h * 0.2)
+            )
+        }
+        
+        return path
+    }
+}
+
+// MARK: - Note View
+struct NoteView: View {
+    let note: MusicScore.Measure.Note
+    let clef: Instrument.Clef
+    @Environment(\.score) var score: MusicScore?
+    
+    var body: some View {
+        ZStack {
+            if note.isRest {
+                // Render rest
+                RestShape(duration: note.duration)
+                    .stroke(Color.primary, lineWidth: 1.5)
+                    .frame(width: 16, height: 16)
+                    .offset(y: restYOffset())
+            } else {
+                // Render note
+                // Ledger lines
+                ForEach(ledgerLineYs(), id: \.self) { y in
+                    Rectangle()
+                        .frame(width: 24, height: 1)
+                        .foregroundColor(.primary)
+                        .offset(y: y)
+                }
+                
+                HStack(spacing: 0) {
+                    // Accidental
+                    if let accidental = accidentalType() {
+                        accidentalShape(for: accidental)
+                            .stroke(Color.primary, lineWidth: 1.5)
+                            .frame(width: 8, height: 16)
+                            .offset(x: -12, y: 0)
+                    }
+                    
+                    // Note head with stem and flags
+                    NoteHeadWithStemAndFlags(
+                        note: note,
+                        stemDirection: stemDirection,
+                        noteYOffset: noteYOffset(),
+                        flagCount: flagCount(for: note.duration)
+                    )
+                }
+                .offset(y: noteYOffset())
+            }
+        }
+    }
+    
+    // MARK: - Note Positioning
+    private func noteYOffset() -> CGFloat {
+        let staffSpacing: CGFloat = 8
+        let midi = midiNumber(for: note.pitch)
+        
+        // Define middle C for each clef
+        let middleC: Int
+        switch clef {
+        case .treble: middleC = 60 // C4
+        case .bass: middleC = 48   // C3
+        case .alto, .tenor: middleC = 53 // C4
+        }
+        
+        // Calculate offset from middle C
+        let offset = CGFloat(middleC - midi) * staffSpacing / 2.0
+        return offset
+    }
+    
+    private func midiNumber(for note: Instrument.Note) -> Int {
+        let base = ["C": 0, "C#": 1, "D": 2, "D#": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "G#": 8, "A": 9, "A#": 10, "B": 11]
+        let pitch = base[note.pitch.rawValue] ?? 0
+        return (note.octave + 1) * 12 + pitch
+    }
+    
+    // MARK: - Accidental Logic
+    private func accidentalType() -> AccidentalType? {
+        guard let score = score else { return nil }
+        
+        let pitch = note.pitch
+        let keySignature = score.keySignature
+        
+        // Check if note is in key signature
+        if isNoteInKeySignature(pitch, keySignature) {
+            return nil
+        }
+        
+        // Determine accidental based on note name
+        if pitch.pitch.rawValue.contains("#") {
+            return .sharp
+        } else if pitch.pitch.rawValue.contains("b") {
+            return .flat
+        } else {
+            // For natural notes, check if they need a natural sign
+            return .natural
+        }
+    }
+    
+    private func isNoteInKeySignature(_ note: Instrument.Note, _ keySignature: KeySignature) -> Bool {
+        // Simplified check - in a real app, this would be more sophisticated
+        
+        // For demo purposes, assume C major (no sharps/flats)
+        if keySignature.sharps == 0 && keySignature.flats == 0 {
+            return !note.pitch.rawValue.contains("#") && !note.pitch.rawValue.contains("b")
+        }
+        
+        return false
+    }
+    
+    private func accidentalShape(for type: AccidentalType) -> AnyShape {
+        switch type {
+        case .sharp: return AnyShape(SharpShape())
+        case .flat: return AnyShape(FlatShape())
+        case .natural: return AnyShape(NaturalShape())
+        }
+    }
+    
+    // MARK: - Stem Direction
+    private var stemDirection: StemDirection {
+        let y = noteYOffset()
+        // Stem up if note is below middle line, down if above
+        return y > 0 ? .up : .down
+    }
+    
+    enum StemDirection { case up, down }
+    
+    // MARK: - Flag Count
+    private func flagCount(for duration: MusicScore.Measure.Note.Duration) -> Int? {
+        switch duration {
+        case .eighth: return 1
+        case .sixteenth: return 2
+        case .thirtySecond: return 3
+        default: return nil
+        }
+    }
+    
+    // MARK: - Ledger Lines
+    private func ledgerLineYs() -> [CGFloat] {
+        let staffSpacing: CGFloat = 8
+        let midi = midiNumber(for: note.pitch)
+        
+        // Define staff range for each clef
+        let (top, bottom): (Int, Int)
+        switch clef {
+        case .treble: top = 64; bottom = 77  // E4 to F5
+        case .alto, .tenor: top = 55; bottom = 69  // G3 to A4
+        case .bass: top = 43; bottom = 57  // G2 to A3
+        }
+        
+        var lines: [CGFloat] = []
+        
+        // Above staff
+        if midi > bottom {
+            let steps = (midi - bottom) / 2
+            for i in 1...steps {
+                let y = CGFloat(i * 2) * staffSpacing / 2.0
+                lines.append(y)
+            }
+        }
+        
+        // Below staff
+        if midi < top {
+            let steps = (top - midi) / 2
+            for i in 1...steps {
+                let y = -CGFloat(i * 2) * staffSpacing / 2.0
+                lines.append(y)
+            }
+        }
+        
+        return lines
+    }
+    
+    // MARK: - Rest Positioning
+    private func restYOffset() -> CGFloat {
+        // Position rests in the middle of the staff
+        return 0
+    }
+}
+
+// MARK: - Note Head with Stem and Flags
+struct NoteHeadWithStemAndFlags: View {
+    let note: MusicScore.Measure.Note
+    let stemDirection: NoteView.StemDirection
+    let noteYOffset: CGFloat
+    let flagCount: Int?
+    
+    var body: some View {
+        ZStack(alignment: stemDirection == .up ? .bottomLeading : .topTrailing) {
+            // Note head
+            NoteHeadShape(isHollow: note.duration == .half || note.duration == .whole)
+                .fill(note.duration == .half || note.duration == .whole ? Color.clear : Color.primary)
+                .stroke(Color.primary, lineWidth: note.duration == .half || note.duration == .whole ? 1.5 : 0)
+                .frame(width: 12, height: 8)
+            
+            // Stem
+            Rectangle()
+                .frame(width: 1.5, height: 24)
+                .foregroundColor(.primary)
+                .offset(x: stemDirection == .up ? 10 : 0, y: stemDirection == .up ? -12 : 12)
+            
+            // Flags
+            if let flagCount = flagCount, flagCount > 0 {
+                ForEach(0..<flagCount, id: \.self) { i in
+                    NoteFlagShape(up: stemDirection == .up)
+                        .stroke(Color.primary, lineWidth: 1.5)
+                        .frame(width: 8, height: 8)
+                        .offset(
+                            x: stemDirection == .up ? 12 : -2,
+                            y: stemDirection == .up ? -20 - CGFloat(i * 6) : 20 + CGFloat(i * 6)
+                        )
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Measure View
 struct MeasureView: View {
     let measure: MusicScore.Measure
     let instrument: Instrument?
@@ -169,12 +535,13 @@ struct MeasureView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Bar number above staff
+            // Measure number
             Text("\(measure.measureNumber)")
                 .font(.caption2)
                 .foregroundColor(.secondary)
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 2)
+            
             ZStack(alignment: .leading) {
                 // Staff lines
                 VStack(spacing: 8) {
@@ -185,22 +552,26 @@ struct MeasureView: View {
                     }
                 }
                 .frame(height: 48)
-                // Clef, key, time signature tightly grouped
+                
+                // Clef, key signature, time signature
                 if measure.measureNumber == 1 {
-                    HStack(spacing: 0) {
+                    HStack(spacing: 4) {
                         clefShape()
                             .stroke(Color.primary, lineWidth: 2)
-                            .frame(width: 20, height: 48)
+                            .frame(width: 16, height: 48)
+                        
                         KeySignatureView(keySignature: score?.keySignature ?? KeySignature.commonKeys[0], clef: clef)
                             .frame(height: 48)
-                            .padding(.leading, 2)
+                        
                         TimeSignatureView(timeSignature: score?.timeSignature ?? MusicScore.TimeSignature.commonTimeSignatures[0])
                             .frame(height: 48)
-                            .padding(.leading, 6)
+                            .padding(.leading, 4)
+                        
                         Spacer()
                     }
                     .frame(height: 48)
                 }
+                
                 // Bar lines
                 HStack {
                     Rectangle()
@@ -211,6 +582,7 @@ struct MeasureView: View {
                         .frame(width: 2, height: 48)
                         .foregroundColor(.primary)
                 }
+                
                 // Notes
                 NotesRowView(
                     measure: measure,
@@ -218,18 +590,20 @@ struct MeasureView: View {
                     keyCount: (score?.keySignature.sharps ?? 0) + (score?.keySignature.flats ?? 0)
                 )
                 .frame(height: 48)
-                .padding(.leading, measure.measureNumber == 1 ? 70 : 48)
+                .padding(.leading, measure.measureNumber == 1 ? 60 : 24)
             }
-            .frame(width: 180, height: 60)
-            // Bar number below staff, centered
+            .frame(width: 160, height: 60)
+            
+            // Measure number below
             Text("\(measure.measureNumber)")
                 .font(.caption2)
                 .foregroundColor(.secondary)
                 .frame(maxWidth: .infinity)
                 .padding(.top, 2)
         }
-        .frame(width: 180, height: 80)
+        .frame(width: 160, height: 80)
     }
+    
     private func clefShape() -> AnyShape {
         switch clef {
         case .treble: return AnyShape(TrebleClefShape())
@@ -239,13 +613,32 @@ struct MeasureView: View {
     }
 }
 
+// MARK: - Notes Row View
+struct NotesRowView: View {
+    let measure: MusicScore.Measure
+    let clef: Instrument.Clef
+    let keyCount: Int
+    
+    var body: some View {
+        HStack(spacing: 24) {
+            Spacer().frame(width: measure.measureNumber == 1 ? 40 + CGFloat(keyCount) * 10 : 16)
+            
+            ForEach(measure.notes) { note in
+                NoteView(note: note, clef: clef)
+            }
+        }
+    }
+}
+
+// MARK: - System Row View
 struct SystemRowView: View {
     let systemMeasures: [MusicScore.Measure]
     let selectedInstrument: Instrument?
     let clef: Instrument.Clef
     @Environment(\.score) var score: MusicScore?
+    
     var body: some View {
-        HStack(alignment: .top, spacing: 32) {
+        HStack(alignment: .top, spacing: 24) {
             ForEach(systemMeasures) { measure in
                 MeasureView(measure: measure, instrument: selectedInstrument, clef: clef)
             }
@@ -254,6 +647,7 @@ struct SystemRowView: View {
     }
 }
 
+// MARK: - Main Staff View
 struct StaffView: View {
     let score: MusicScore
     let selectedInstrument: Instrument?
@@ -266,6 +660,7 @@ struct StaffView: View {
                 Text(score.title)
                     .font(.title2)
                     .fontWeight(.bold)
+                
                 HStack {
                     Text("Key: \(score.keySignature.displayName)")
                     Spacer()
@@ -277,15 +672,22 @@ struct StaffView: View {
                 .foregroundColor(.secondary)
             }
             .padding(.horizontal)
+            
             // Multi-measure systems
             ForEach(Array(chunked(score.measures, size: measuresPerSystem).enumerated()), id: \.offset) { (systemIndex, systemMeasures) in
-                SystemRowView(systemMeasures: systemMeasures, selectedInstrument: selectedInstrument, clef: selectedInstrument?.clef ?? .treble)
-                    .environment(\.score, score)
+                SystemRowView(
+                    systemMeasures: systemMeasures,
+                    selectedInstrument: selectedInstrument,
+                    clef: selectedInstrument?.clef ?? .treble
+                )
+                .environment(\.score, score)
             }
+            
             Spacer()
         }
         .background(Color(.systemBackground))
     }
+    
     // Helper to chunk array into systems
     private func chunked<T>(_ array: [T], size: Int) -> [[T]] {
         stride(from: 0, to: array.count, by: size).map { start in
@@ -294,199 +696,18 @@ struct StaffView: View {
     }
 }
 
-struct NotesRowView: View {
-    let measure: MusicScore.Measure
-    let clef: Instrument.Clef
-    let keyCount: Int
-    @Environment(\.score) var score: MusicScore?
-    var body: some View {
-        HStack(spacing: 32) {
-            Spacer().frame(width: measure.measureNumber == 1 ? 60 + CGFloat(keyCount) * 12 : 24)
-            ForEach(measure.notes) { note in
-                NoteView(note: note, clef: clef)
-            }
-        }
+// MARK: - Extensions
+extension Array {
+    subscript(safe index: Int) -> Element? {
+        (startIndex..<endIndex).contains(index) ? self[index] : nil
     }
 }
 
-struct NoteHeadWithStemAndFlags: View {
-    let note: MusicScore.Measure.Note
-    let stemDirection: NoteView.StemDirection
-    let noteYOffset: CGFloat
-    let flagCount: Int?
-    var body: some View {
-        ZStack(alignment: stemDirection == .up ? .bottomLeading : .topTrailing) {
-            NoteHeadShape()
-                .fill(Color.primary)
-                .frame(width: 14, height: 10)
-            Rectangle()
-                .frame(width: 2, height: 20)
-                .foregroundColor(.primary)
-                .offset(x: stemDirection == .up ? 10 : 0, y: stemDirection == .up ? -10 : 10)
-                .rotationEffect(stemDirection == .up ? .degrees(0) : .degrees(180), anchor: .bottom)
-            if let flagCount, flagCount > 0 {
-                ForEach(0..<flagCount, id: \ .self) { i in
-                    NoteFlagShape(up: stemDirection == .up)
-                        .stroke(Color.primary, lineWidth: 2)
-                        .frame(width: 10, height: 10)
-                        .offset(x: stemDirection == .up ? 12 : -2, y: stemDirection == .up ? -16 - CGFloat(i * 6) : 16 + CGFloat(i * 6))
-                }
-            }
-        }
-    }
-}
-
-struct NoteView: View {
-    let note: MusicScore.Measure.Note
-    let clef: Instrument.Clef
-    @Environment(\.score) var score: MusicScore?
-    
-    var body: some View {
-        ZStack(alignment: .center) {
-            // Ledger lines
-            ForEach(ledgerLineYs(), id: \ .self) { y in
-                Rectangle()
-                    .frame(width: 20, height: 1)
-                    .foregroundColor(.primary)
-                    .offset(y: y)
-            }
-            HStack(spacing: 0) {
-                accidentalView
-                    .offset(x: -8, y: noteYOffset()) // Move accidentals closer and align vertically
-                NoteHeadWithStemAndFlags(
-                    note: note,
-                    stemDirection: stemDirection,
-                    noteYOffset: noteYOffset(),
-                    flagCount: flagCount(for: note.duration)
-                )
-            }
-            .offset(y: noteYOffset())
-        }
-    }
-    // MARK: - Accidental Rendering
-    private var accidentalView: some View {
-        if let accidental = accidentalType() {
-            return AnyView(
-                accidentalShape(for: accidental)
-                    .stroke(Color.primary, lineWidth: 2)
-                    .frame(width: 10, height: 18)
-            )
-        } else {
-            return AnyView(EmptyView())
-        }
-    }
-    private func accidentalShape(for type: AccidentalType) -> AnyShape {
-        switch type {
-        case .sharp: return AnyShape(SharpShape())
-        case .flat: return AnyShape(FlatShape())
-        case .natural: return AnyShape(NaturalShape())
-        }
-    }
-    // MARK: - Note Head, Stem, Flags
-    private func noteYOffset() -> CGFloat {
-        // Middle C is line 3 for treble, line 1 for bass, line 3 for alto
-        let staffSpacing: CGFloat = 8
-        let pitch = note.pitch
-        let midi = midiNumber(for: pitch)
-        let middleC: Int
-        switch clef {
-        case .treble: middleC = 60
-        case .bass: middleC = 48
-        case .alto, .tenor: middleC = 53
-        }
-        let offset = CGFloat(middleC - midi) * staffSpacing / 2.0
-        return offset
-    }
-    private func midiNumber(for note: Instrument.Note) -> Int {
-        let base = ["C": 0, "C#": 1, "D": 2, "D#": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "G#": 8, "A": 9, "A#": 10, "B": 11]
-        let pitch = base[note.pitch.rawValue] ?? 0
-        return (note.octave + 1) * 12 + pitch
-    }
-    // Determine if the note needs an accidental
-    private func accidentalType() -> AccidentalType? {
-        guard score != nil else { return nil }
-        let pitch = note.pitch
-        // For demo: show sharp for C#, flat for Bb, natural for C natural in sharp keys
-        if pitch.pitch.rawValue.contains("#") { return .sharp }
-        if pitch.pitch.rawValue.contains("b") { return .flat }
-        // In a real app, check if the note is not in the key signature
-        return nil
-    }
-    // Stem direction: up if below middle line, down if above
-    private var stemDirection: StemDirection {
-        let y = noteYOffset()
-        return y > 0 ? .up : .down
-    }
-    enum StemDirection { case up, down }
-    // Number of flags for duration
-    private func flagCount(for duration: MusicScore.Measure.Note.Duration) -> Int? {
-        switch duration {
-        case .eighth: return 1
-        case .sixteenth: return 2
-        case .thirtySecond: return 3
-        default: return nil
-        }
-    }
-    // Helper for ledger lines
-    private func ledgerLineYs() -> [CGFloat] {
-        // Staff lines: 0 (top) to 4 (bottom), spacing 8
-        // Treble: E4 (top, midi 64), F5 (bottom, midi 77)
-        // Alto: G3 (top, midi 55), A4 (bottom, midi 69)
-        // Bass: G2 (top, midi 43), A3 (bottom, midi 57)
-        let staffSpacing: CGFloat = 8
-        let midi = midiNumber(for: note.pitch)
-        let (top, bottom): (Int, Int)
-        switch clef {
-        case .treble: top = 64; bottom = 77
-        case .alto, .tenor: top = 55; bottom = 69
-        case .bass: top = 43; bottom = 57
-        }
-        var lines: [CGFloat] = []
-        // Above
-        var m = midi
-        var y = CGFloat(top - midi) * staffSpacing / 2.0
-        while m < top {
-            if (top - m) % 2 == 0 { lines.append(CGFloat(top - m) * staffSpacing / 2.0) }
-            m += 1
-        }
-        // Below
-        m = midi
-        while m > bottom {
-            if (m - bottom) % 2 == 0 { lines.append(CGFloat(top - m) * staffSpacing / 2.0) }
-            m -= 1
-        }
-        return lines
-    }
-}
-
-struct NoteHeadShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.addEllipse(in: rect)
-        return path
-    }
-}
-
-struct NoteFlagShape: Shape {
-    let up: Bool
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let w = rect.width, h = rect.height
-        if up {
-            path.move(to: CGPoint(x: 0, y: h))
-            path.addQuadCurve(to: CGPoint(x: w, y: h * 0.5), control: CGPoint(x: w * 0.5, y: h * 1.2))
-        } else {
-            path.move(to: CGPoint(x: 0, y: 0))
-            path.addQuadCurve(to: CGPoint(x: w, y: h * 0.5), control: CGPoint(x: w * 0.5, y: -h * 0.2))
-        }
-        return path
-    }
-}
-
-// Provide the score to NoteView via environment
+// MARK: - Environment
 private struct ScoreKey: EnvironmentKey {
     static let defaultValue: MusicScore? = nil
 }
+
 extension EnvironmentValues {
     var score: MusicScore? {
         get { self[ScoreKey.self] }
@@ -494,6 +715,7 @@ extension EnvironmentValues {
     }
 }
 
+// MARK: - Preview
 #Preview {
     let sampleScore = MusicScore.generateRandomScore(
         title: "Sample Composition",

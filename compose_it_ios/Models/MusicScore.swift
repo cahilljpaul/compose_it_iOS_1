@@ -103,42 +103,108 @@ extension MusicScore {
         var notes: [Measure.Note] = []
         var remainingBeats = Double(timeSignature.beats)
         
-        while remainingBeats > 0 {
-            let availableDurations = Measure.Note.Duration.allCases.filter { $0.value <= remainingBeats }
-            guard let randomDuration = availableDurations.randomElement() else { break }
+        // Create a more musical pattern
+        let pattern = generateMusicalPattern(timeSignature: timeSignature, measureNumber: measureNumber)
+        
+        for patternElement in pattern {
+            guard patternElement <= remainingBeats else { break }
             
-            let isRest = Bool.random()
+            let isRest = Bool.random() && patternElement <= 1.0 // Only allow rests for shorter notes
             let note: Measure.Note
             
             if isRest {
                 note = Measure.Note(
                     pitch: Instrument.Note(pitch: .c, octave: 4), // Placeholder for rest
-                    duration: randomDuration,
+                    duration: durationFromValue(patternElement),
                     isRest: true
                 )
             } else {
-                let randomPitch = generateRandomPitchInKey(keySignature: keySignature)
+                let randomPitch = generateRandomPitchInKey(keySignature: keySignature, measureNumber: measureNumber)
                 note = Measure.Note(
                     pitch: randomPitch,
-                    duration: randomDuration,
+                    duration: durationFromValue(patternElement),
                     isRest: false
                 )
             }
             
             notes.append(note)
-            remainingBeats -= randomDuration.value
+            remainingBeats -= patternElement
         }
         
         return notes
     }
     
-    private static func generateRandomPitchInKey(keySignature: KeySignature) -> Instrument.Note {
-        // Simple random pitch generation within a reasonable range
-        let pitches = Instrument.Note.Pitch.allCases
-        let randomPitch = pitches.randomElement() ?? .c
-        let randomOctave = Int.random(in: 3...5)
+    private static func generateMusicalPattern(timeSignature: TimeSignature, measureNumber: Int) -> [Double] {
+        let totalBeats = Double(timeSignature.beats)
+        
+        // Create different patterns based on measure number for variety
+        switch measureNumber % 4 {
+        case 0: // End of phrase - often longer notes
+            return [totalBeats] // Whole note
+        case 1: // Beginning of phrase - often quarter notes
+            return Array(repeating: 1.0, count: Int(totalBeats))
+        case 2: // Middle of phrase - mix of durations
+            if totalBeats >= 4 {
+                return [2.0, 1.0, 1.0] // Half, quarter, quarter
+            } else {
+                return [1.0, 1.0] // Two quarters
+            }
+        case 3: // Lead into next phrase - often eighth notes
+            if totalBeats >= 2 {
+                return Array(repeating: 0.5, count: Int(totalBeats * 2))
+            } else {
+                return [totalBeats]
+            }
+        default:
+            return [totalBeats]
+        }
+    }
+    
+    private static func durationFromValue(_ value: Double) -> Measure.Note.Duration {
+        switch value {
+        case 4.0: return .whole
+        case 2.0: return .half
+        case 1.0: return .quarter
+        case 0.5: return .eighth
+        case 0.25: return .sixteenth
+        case 0.125: return .thirtySecond
+        default: return .quarter
+        }
+    }
+    
+    private static func generateRandomPitchInKey(keySignature: KeySignature, measureNumber: Int) -> Instrument.Note {
+        // Generate pitches that are more likely to be in the key signature
+        let keyPitches = getPitchesInKey(keySignature)
+        let randomPitch = keyPitches.randomElement() ?? .c
+        
+        // Vary octave based on measure number for more interesting melodies
+        let baseOctave = 4
+        let octaveVariation = (measureNumber % 3) - 1 // -1, 0, or 1
+        let randomOctave = baseOctave + octaveVariation
         
         return Instrument.Note(pitch: randomPitch, octave: randomOctave)
+    }
+    
+    private static func getPitchesInKey(_ keySignature: KeySignature) -> [Instrument.Note.Pitch] {
+        // Simplified key signature mapping
+        switch keySignature.tonic.pitch {
+        case .c:
+            return [.c, .d, .e, .f, .g, .a, .b]
+        case .g:
+            return [.g, .a, .b, .c, .d, .e, .fSharp]
+        case .d:
+            return [.d, .e, .fSharp, .g, .a, .b, .cSharp]
+        case .a:
+            return [.a, .b, .cSharp, .d, .e, .fSharp, .gSharp]
+        case .e:
+            return [.e, .fSharp, .gSharp, .a, .b, .cSharp, .dSharp]
+        case .b:
+            return [.b, .cSharp, .dSharp, .e, .fSharp, .gSharp, .aSharp]
+        case .f:
+            return [.f, .g, .a, .b, .c, .d, .e]
+        default:
+            return [.c, .d, .e, .f, .g, .a, .b] // Default to C major
+        }
     }
 }
 
