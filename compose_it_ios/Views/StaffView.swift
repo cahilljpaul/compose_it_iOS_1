@@ -332,8 +332,8 @@ struct NoteView: View {
                     .offset(y: restYOffset())
             } else {
                 // Render note
-                // Ledger lines
-                ForEach(ledgerLineYs(), id: \.self) { y in
+                // Ledger lines (max 2 above/below staff)
+                ForEach(limitedLedgerLineYs(), id: \.self) { y in
                     Rectangle()
                         .frame(width: 24, height: 1)
                         .foregroundColor(.primary)
@@ -486,6 +486,16 @@ struct NoteView: View {
         return lines
     }
     
+    // Limit ledger lines to 2 above/below staff
+    private func limitedLedgerLineYs() -> [CGFloat] {
+        let ys = ledgerLineYs()
+        if ys.count <= 4 { return ys }
+        if let minY = ys.min(), let maxY = ys.max() {
+            return ys.filter { $0 == minY || $0 == maxY || $0 == 0 }
+        }
+        return ys
+    }
+    
     // MARK: - Rest Positioning
     private func restYOffset() -> CGFloat {
         // Position rests in the middle of the staff
@@ -538,17 +548,17 @@ struct MeasureView: View {
     let clef: Instrument.Clef
     let staffHeight: CGFloat
     let measureWidth: CGFloat
+    let showClefAndSignature: Bool
     @Environment(\.score) var score: MusicScore?
     
     var body: some View {
         VStack(spacing: 0) {
-            // Measure number
+            // Measure number (centered)
             Text("\(measure.measureNumber)")
                 .font(.caption2)
                 .foregroundColor(.secondary)
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 2)
-            
             ZStack(alignment: .leading) {
                 // Staff lines
                 VStack(spacing: staffHeight / 8) {
@@ -559,26 +569,22 @@ struct MeasureView: View {
                     }
                 }
                 .frame(height: staffHeight)
-                
-                // Clef, key signature, time signature
-                if measure.measureNumber == 1 {
+                .padding(.vertical, 8)
+                // Clef, key, time signature (always at start of system)
+                if showClefAndSignature {
                     HStack(spacing: 4) {
                         clefShape()
                             .stroke(Color.primary, lineWidth: 2)
                             .frame(width: 18, height: staffHeight)
-                        
                         KeySignatureView(keySignature: score?.keySignature ?? KeySignature.commonKeys[0], clef: clef)
                             .frame(height: staffHeight)
-                        
                         TimeSignatureView(timeSignature: score?.timeSignature ?? MusicScore.TimeSignature.commonTimeSignatures[0])
                             .frame(height: staffHeight)
                             .padding(.leading, 4)
-                        
                         Spacer()
                     }
                     .frame(height: staffHeight)
                 }
-                
                 // Bar lines
                 HStack {
                     Rectangle()
@@ -589,7 +595,6 @@ struct MeasureView: View {
                         .frame(width: 2, height: staffHeight)
                         .foregroundColor(.primary)
                 }
-                
                 // Notes
                 NotesRowView(
                     measure: measure,
@@ -598,11 +603,10 @@ struct MeasureView: View {
                     staffHeight: staffHeight
                 )
                 .frame(height: staffHeight)
-                .padding(.leading, measure.measureNumber == 1 ? 60 : 24)
+                .padding(.leading, showClefAndSignature ? 60 : 24)
             }
             .frame(width: measureWidth, height: staffHeight + 12)
-            
-            // Measure number below
+            // Measure number below (centered)
             Text("\(measure.measureNumber)")
                 .font(.caption2)
                 .foregroundColor(.secondary)
@@ -648,17 +652,19 @@ struct SystemRowView: View {
     let clef: Instrument.Clef
     let staffHeight: CGFloat
     let measureWidth: CGFloat
+    let showClefAndSignature: Bool
     @Environment(\.score) var score: MusicScore?
     
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
-            ForEach(systemMeasures) { measure in
+            ForEach(systemMeasures.indices, id: \ .self) { idx in
                 MeasureView(
-                    measure: measure,
+                    measure: systemMeasures[idx],
                     instrument: selectedInstrument,
                     clef: clef,
                     staffHeight: staffHeight,
-                    measureWidth: measureWidth
+                    measureWidth: measureWidth,
+                    showClefAndSignature: showClefAndSignature && idx == 0 // Only first measure in system
                 )
             }
         }
@@ -675,13 +681,12 @@ struct StaffView: View {
     let measureWidth: CGFloat = 120
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        VStack(alignment: .leading, spacing: 16) {
             // Header with score information
             VStack(alignment: .leading, spacing: 8) {
                 Text(score.title)
                     .font(.title2)
                     .fontWeight(.bold)
-                
                 HStack {
                     Text("Key: \(score.keySignature.displayName)")
                     Spacer()
@@ -693,23 +698,29 @@ struct StaffView: View {
                 .foregroundColor(.secondary)
             }
             .padding(.horizontal)
-            
-            // Multi-measure systems in a horizontal ScrollView
-            ScrollView(.horizontal, showsIndicators: true) {
-                VStack(alignment: .leading, spacing: 24) {
-                    ForEach(Array(chunked(score.measures, size: measuresPerSystem).enumerated()), id: \.offset) { (systemIndex, systemMeasures) in
-                        SystemRowView(
-                            systemMeasures: systemMeasures,
-                            selectedInstrument: selectedInstrument,
-                            clef: selectedInstrument?.clef ?? .treble,
-                            staffHeight: staffHeight,
-                            measureWidth: measureWidth
-                        )
-                        .environment(\.score, score)
+            .padding(.bottom, 8)
+
+            // Multi-measure systems in a horizontal ScrollView if needed
+            GeometryReader { geo in
+                let totalWidth = CGFloat(score.measures.count) * measureWidth
+                ScrollView(.horizontal, showsIndicators: totalWidth > geo.size.width) {
+                    VStack(alignment: .leading, spacing: 32) {
+                        ForEach(Array(chunked(score.measures, size: measuresPerSystem).enumerated()), id: \.offset) { (systemIndex, systemMeasures) in
+                            SystemRowView(
+                                systemMeasures: systemMeasures,
+                                selectedInstrument: selectedInstrument,
+                                clef: selectedInstrument?.clef ?? .treble,
+                                staffHeight: staffHeight,
+                                measureWidth: measureWidth,
+                                showClefAndSignature: true // Always show at start of system
+                            )
+                            .environment(\.score, score)
+                        }
                     }
+                    .padding(.vertical, 16)
                 }
+                .frame(height: staffHeight + 56) // Add padding for measure numbers and vertical space
             }
-            .frame(height: staffHeight + 40) // Add padding for measure numbers
             Spacer()
         }
         .background(Color(.systemBackground))
